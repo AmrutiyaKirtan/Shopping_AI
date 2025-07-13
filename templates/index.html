@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartShop - Futuristic Shopping Assistant</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="main-glass">
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-atom"></i>
+                <span>SmartShop</span>
+            </div>
+            <button id="loginBtn" class="btn-glass">Login</button>
+        </header>
+        <main class="dashboard">
+            <section class="hero-future">
+                <h1>Welcome to <span class="gradient-text">SmartShop</span></h1>
+                <p class="subtitle">Minimal. Intelligent. Effortless Shopping.</p>
+                <div class="quick-actions">
+                    <button class="action-btn" id="voiceShopBtn"><i class="fas fa-microphone"></i><span>Voice Shop</span></button>
+                    <button class="action-btn" id="vrTourBtn"><i class="fas fa-vr-cardboard"></i><span>VR Tour</span></button>
+                    <button class="action-btn" id="cartBtn"><i class="fas fa-shopping-cart"></i><span>Cart</span></button>
+                    <button class="action-btn" id="historyBtn"><i class="fas fa-history"></i><span>History</span></button>
+                    <button class="action-btn" id="aiBtn"><i class="fas fa-robot"></i><span>AI Assist</span></button>
+                </div>
+            </section>
+            <section class="shopping-section" id="shoppingSection">
+                <h2 class="section-title">Shop Products</h2>
+                <div class="product-grid" id="productGrid">
+                    <!-- Product cards will be rendered here by JS -->
+                </div>
+            </section>
+            <section class="main-panel" id="mainPanel">
+                <!-- Dynamic content will be loaded here -->
+                <div class="panel-placeholder">
+                    <i class="fas fa-rocket"></i>
+                    <h2>Start your smart shopping journey</h2>
+                    <p>Use the quick actions above to begin.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+    <!-- Product Detail Modal -->
+    <div id="productModal" class="modal-glass">
+        <div class="modal-content-glass product-modal-content">
+            <span class="close">&times;</span>
+            <div id="productModalContent">
+                <!-- Product details will be rendered here by JS -->
+            </div>
+        </div>
+    </div>
+    <!-- Cart Modal -->
+    <div id="cartModal" class="modal-glass">
+        <div class="modal-content-glass cart-modal-content">
+            <span class="close">&times;</span>
+            <h2>Your Cart</h2>
+            <div id="cartItemsList"></div>
+            <div class="cart-total-row">
+                <span>Total:</span>
+                <span id="cartTotalAmount">$0.00</span>
+            </div>
+            <button id="checkoutBtn" class="btn-glass">Checkout</button>
+        </div>
+    </div>
+    <!-- Floating Cart Button -->
+    <button id="floatingCartBtn" class="floating-cart-btn"><i class="fas fa-shopping-cart"></i><span id="cartCountBadge">0</span></button>
+    <div id="loginModal" class="modal-glass">
+        <div class="modal-content-glass">
+            <span class="close">&times;</span>
+            <form id="loginForm" class="auth-form-glass">
+                <input type="email" placeholder="Email" required>
+                <input type="password" placeholder="Password" required>
+                <button type="submit" class="btn-glass">Login</button>
+                <div class="auth-toggle-text">Don't have an account? <a href="#" id="showSignUp">Sign Up</a></div>
+            </form>
+            <form id="signUpForm" class="auth-form-glass" style="display:none;">
+                <input type="email" placeholder="Email" required>
+                <input type="password" placeholder="Password" required>
+                <button type="submit" class="btn-glass">Sign Up</button>
+                <div class="auth-toggle-text">Already have an account? <a href="#" id="showLogin">Login</a></div>
+            </form>
+        </div>
+    </div>
+    <!-- Voice Shopping Modal -->
+    <div id="voiceModal" class="modal-glass">
+        <div class="modal-content-glass voice-modal-content">
+            <span class="close">&times;</span>
+            <h2>Voice Shopping</h2>
+            <div class="voice-mic-area">
+                <button id="startVoiceBtn" class="voice-mic-btn" title="Start voice command"><i class="fas fa-microphone"></i></button>
+                <div id="voiceStatus" class="voice-status">Click the mic and speak a command</div>
+                <div id="voiceResult" class="voice-result"></div>
+            </div>
+            <div class="voice-examples">
+                <div>Try: <span>"Add milk to cart"</span>, <span>"Show cart"</span>, <span>"Checkout"</span></div>
+            </div>
+        </div>
+    </div>
+    <!-- Purchase History Modal -->
+    <div id="historyModal" class="modal-glass">
+        <div class="modal-content-glass history-modal-content">
+            <span class="close">&times;</span>
+            <h2>Purchase History</h2>
+            <div id="historyList" class="history-list">
+                <!-- Purchase history items will be rendered here -->
+            </div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html> 
