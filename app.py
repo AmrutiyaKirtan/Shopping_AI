@@ -8,6 +8,7 @@ import pymysql
 import bcrypt
 import datetime
 from datetime import timedelta
+from collections import Counter
 
 # Load environment variables
 load_dotenv()
@@ -134,6 +135,16 @@ def add_to_cart():
         cart.append({'product_id': product_id, 'quantity': quantity})
     user_carts[email] = cart
     return jsonify({'message': 'Item added to cart'})
+
+@app.route('/api/cart/remove', methods=['POST'])
+@jwt_required()
+def remove_from_cart():
+    email = get_jwt_identity()
+    data = request.get_json()
+    product_id = data.get('product_id')
+    if email in user_carts:
+        user_carts[email] = [item for item in user_carts[email] if item['product_id'] != product_id]
+    return jsonify({'message': 'Item removed from cart'})
 
 @app.route('/api/cart', methods=['GET'])
 @jwt_required()
@@ -263,6 +274,76 @@ def get_order(order_id):
         cursor.execute("SELECT * FROM order_items WHERE order_id=%s", (order_id,))
         items = cursor.fetchall()
     return jsonify({'order': order, 'items': items})
+
+@app.route('/api/orders/frequent', methods=['GET'])
+@jwt_required()
+def get_frequent_items():
+    email = get_jwt_identity()
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("SELECT id FROM users WHERE email=%s", (email,))
+        user = cursor.fetchone()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        user_id = user['id']
+        # Get all order items for this user
+        cursor.execute("""
+            SELECT oi.product_id, oi.product_name, oi.price
+            FROM orders o
+            JOIN order_items oi ON o.id = oi.order_id
+            WHERE o.user_id = %s
+        """, (user_id,))
+        rows = cursor.fetchall()
+        if not rows:
+            return jsonify({'items': []})
+        # Count frequency of each product_id
+        freq = Counter()
+        product_info = {}
+        for row in rows:
+            freq[row['product_id']] += 1
+            product_info[row['product_id']] = {
+                'product_id': row['product_id'],
+                'product_name': row['product_name'],
+                'price': float(row['price'])
+            }
+        # Get top 5 most frequent items
+        top_items = [product_info[pid] for pid, _ in freq.most_common(5)]
+    return jsonify({'items': top_items})
+
+@app.route('/api/assistant/recommend', methods=['GET'])
+@jwt_required()
+def recommend_items():
+    email = get_jwt_identity()
+    db = get_db()
+    with db.cursor() as cursor:
+        cursor.execute("SELECT id FROM users WHERE email=%s", (email,))
+        user = cursor.fetchone()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        user_id = user['id']
+        # Get all order items for this user
+        cursor.execute("""
+            SELECT oi.product_id, oi.product_name, oi.price
+            FROM orders o
+            JOIN order_items oi ON o.id = oi.order_id
+            WHERE o.user_id = %s
+        """, (user_id,))
+        rows = cursor.fetchall()
+        if not rows:
+            return jsonify({'items': [], 'message': 'No previous orders found.'})
+        from collections import Counter
+        freq = Counter()
+        product_info = {}
+        for row in rows:
+            freq[row['product_id']] += 1
+            product_info[row['product_id']] = {
+                'product_id': row['product_id'],
+                'product_name': row['product_name'],
+                'price': float(row['price'])
+            }
+        # Recommend top 3 most frequent items
+        top_items = [product_info[pid] for pid, _ in freq.most_common(3)]
+    return jsonify({'items': top_items, 'message': 'Recommended based on your previous orders.'})
 
 if __name__ == "__main__":
     socketio.run(app, debug=True) 

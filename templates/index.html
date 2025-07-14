@@ -64,14 +64,16 @@
                 <span>Total:</span>
                 <span id="cartTotalAmount">$0.00</span>
             </div>
+            <button id="quickAddBtn" class="btn-glass" style="margin-bottom: 0.5rem;">Quick Add Frequent Items</button>
             <button id="checkoutBtn" class="btn-glass">Checkout</button>
         </div>
     </div>
     <!-- Floating Cart Button -->
     <button id="floatingCartBtn" class="floating-cart-btn"><i class="fas fa-shopping-cart"></i><span id="cartCountBadge">0</span></button>
+    <!-- Login/Signup Modal -->
     <div id="loginModal" class="modal-glass">
-        <div class="modal-content-glass">
-            <span class="close">&times;</span>
+        <div class="auth-glass-box">
+            <h2 id="authTitle">Login</h2>
             <form id="loginForm" class="auth-form-glass">
                 <input type="email" placeholder="Email" required>
                 <input type="password" placeholder="Password" required>
@@ -81,6 +83,7 @@
             <form id="signUpForm" class="auth-form-glass" style="display:none;">
                 <input type="email" placeholder="Email" required>
                 <input type="password" placeholder="Password" required>
+                <input type="password" placeholder="Confirm Password" required>
                 <button type="submit" class="btn-glass">Sign Up</button>
                 <div class="auth-toggle-text">Already have an account? <a href="#" id="showLogin">Login</a></div>
             </form>
@@ -113,5 +116,80 @@
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <style>
+    .auth-glass-box {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 0 24px rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(12px);
+      margin: 0 auto;
+    }
+    .auth-glass-box h2 {
+      text-align: center;
+      font-weight: 600;
+      margin-bottom: 2rem;
+      color: #fff;
+      font-size: 2.1rem;
+    }
+    .auth-form-glass input {
+      width: 100%;
+      padding: 1rem 1.2rem;
+      margin: 0.7rem 0;
+      border: none;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.10);
+      color: #fff;
+      font-size: 1.15rem;
+    }
+    .auth-form-glass input:focus {
+      outline: 2px solid #4fc3f7;
+      background: rgba(255, 255, 255, 0.13);
+    }
+    .auth-form-glass button {
+      width: 100%;
+      padding: 1rem;
+      margin-top: 1.2rem;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(90deg, #4fc3f7, #1976d2);
+      color: #fff;
+      font-weight: 600;
+      font-size: 1.15rem;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .auth-form-glass button:hover {
+      background: linear-gradient(90deg, #1976d2, #4fc3f7);
+    }
+    .auth-toggle-text {
+      margin-top: 1.2rem;
+      text-align: center;
+      font-size: 1.05rem;
+      color: #fff;
+    }
+    .auth-toggle-text a {
+      color: #4fc3f7;
+      text-decoration: none;
+    }
+    .main-glass {
+      max-width: 1400px;
+      margin: 40px auto;
+      background: rgba(255,255,255,0.07);
+      border-radius: 24px;
+      box-shadow: 0 0 40px rgba(80, 200, 255, 0.08);
+      padding: 2.5rem 3.5rem;
+      backdrop-filter: blur(12px);
+    }
+    @media (max-width: 1600px) {
+      .main-glass {
+        max-width: 98vw;
+        padding: 2rem 1.5rem;
+      }
+    }
+    </style>
 </body>
 </html> 

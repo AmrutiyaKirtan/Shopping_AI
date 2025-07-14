@@ -26,6 +26,13 @@ function renderProductGrid() {
                 `;
                 grid.appendChild(card);
             });
+            // Add event listeners to all add-to-cart buttons
+            grid.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+                btn.onclick = function() {
+                    const id = parseInt(this.getAttribute('data-id'));
+                    addToCart(id);
+                };
+            });
         })
         .catch(error => {
             console.error('Error fetching products:', error);
@@ -105,26 +112,18 @@ function updateCartBadge(items) {
 
 function removeFromCart(productId) {
     if (!currentUser) return;
-    // Remove by setting quantity to 0
-    fetch('/api/user/data', {
-        method: 'GET',
-        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+    fetch('/api/cart/remove', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        body: JSON.stringify({ product_id: productId })
     })
     .then(res => res.json())
-    .then(userData => {
-        let cart = userData.cart || [];
-        cart = cart.filter(item => item.product_id !== productId);
-        fetch('/api/user/data', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + localStorage.getItem('token')
-            },
-            body: JSON.stringify({ cart })
-        }).then(() => {
-            updateCartDisplay();
-            showNotification('Item removed from cart', 'success');
-        });
+    .then(() => {
+        updateCartDisplay();
+        showNotification('Item removed from cart', 'success');
     });
 }
 
@@ -223,6 +222,7 @@ function loadPurchaseHistory() {
 
 // --- Voice Shopping Logic ---
 let isListening = false;
+let keepListening = false;
 
 function setupVoiceShopping() {
     const voiceModal = document.getElementById('voiceModal');
@@ -230,6 +230,16 @@ function setupVoiceShopping() {
     const micBtn = document.getElementById('startVoiceBtn');
     const statusElem = document.getElementById('voiceStatus');
     const resultElem = document.getElementById('voiceResult');
+    // Add End button if not present
+    let endBtn = document.getElementById('endVoiceBtn');
+    if (!endBtn) {
+        endBtn = document.createElement('button');
+        endBtn.id = 'endVoiceBtn';
+        endBtn.className = 'btn-glass';
+        endBtn.textContent = 'End';
+        endBtn.style.marginLeft = '12px';
+        micBtn.parentNode.appendChild(endBtn);
+    }
     // Open modal
     if (voiceBtn) {
         voiceBtn.onclick = () => {
@@ -239,7 +249,17 @@ function setupVoiceShopping() {
         };
     }
     // Close modal
-    voiceModal.querySelector('.close').onclick = () => closeModal(voiceModal);
+    voiceModal.querySelector('.close').onclick = () => {
+        closeModal(voiceModal);
+        keepListening = false;
+        if (recognition && isListening) recognition.stop();
+    };
+    // End button logic
+    endBtn.onclick = () => {
+        keepListening = false;
+        if (recognition && isListening) recognition.stop();
+        statusElem.textContent = 'Voice input ended.';
+    };
     // Voice recognition
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -258,19 +278,45 @@ function setupVoiceShopping() {
             resultElem.textContent = transcript;
             statusElem.textContent = 'Processing...';
             handleVoiceCommand(transcript, statusElem, resultElem);
+            // Restart recognition if keepListening is true
+            if (keepListening) {
+                setTimeout(() => {
+                    if (recognition && !isListening && keepListening) recognition.start();
+                }, 500);
+            }
         };
         recognition.onerror = function(event) {
             isListening = false;
             micBtn.classList.remove('listening');
-            statusElem.textContent = 'Error: ' + event.error;
+            if (!keepListening && (event.error === 'no-speech' || event.error === 'aborted')) {
+                statusElem.textContent = 'Voice input ended.';
+            } else {
+                statusElem.textContent = 'Error: ' + event.error;
+            }
+            // Optionally restart on error if keepListening
+            if (keepListening && event.error !== 'not-allowed') {
+                setTimeout(() => {
+                    if (recognition && !isListening && keepListening) recognition.start();
+                }, 1000);
+            }
         };
         recognition.onend = function() {
             isListening = false;
             micBtn.classList.remove('listening');
-            if (!resultElem.textContent) statusElem.textContent = 'Click the mic and speak a command';
+            if (keepListening) {
+                setTimeout(() => {
+                    if (recognition && !isListening && keepListening) recognition.start();
+                }, 500);
+            } else {
+                if (!resultElem.textContent) statusElem.textContent = 'Click the mic and speak a command';
+            }
         };
+        // Mic button logic
         micBtn.onclick = function() {
-            if (!isListening) recognition.start();
+            if (recognition && !isListening) {
+                keepListening = true;
+                recognition.start();
+            }
         };
     } else {
         micBtn.disabled = true;
@@ -346,24 +392,34 @@ function setupLoginModal() {
     }
 }
 
+// Helper for fuzzy product name matching
+function normalize(str) {
+    return str.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+}
+function findProductByName(productName) {
+    const spokenWords = normalize(productName).split(' ');
+    return products.find(p => {
+        const prod = normalize(p.name);
+        return spokenWords.every(word => prod.includes(word));
+    });
+}
+
 function handleVoiceCommand(command, statusElem, resultElem) {
     if (!command) return;
     const cmd = command.toLowerCase();
-    // Add to cart: "add [product] to cart"
-    if (cmd.startsWith('add ')) {
-        const match = cmd.match(/add (.+) to cart/);
-        if (match && match[1]) {
-            const productName = match[1].trim();
-            const product = products.find(p => p.name.toLowerCase().includes(productName));
-            if (product) {
-                addToCart(product.id);
-                statusElem.textContent = `Added ${product.name} to cart!`;
-                updateCartDisplay();
-            } else {
-                statusElem.textContent = `Product not found: ${productName}`;
-            }
-            return;
+    // Add to cart: 'add [item name]' or 'add [item name] to cart'
+    let addMatch = cmd.match(/^add\s+(.+?)(?:\s+to cart)?$/);
+    if (addMatch) {
+        const productName = addMatch[1].trim();
+        const product = findProductByName(productName);
+        if (product) {
+            addToCart(product.id);
+            statusElem.textContent = `Added ${product.name} to cart!`;
+            updateCartDisplay();
+        } else {
+            statusElem.textContent = `Product not found: ${productName}`;
         }
+        return;
     }
     // Show cart
     if (cmd.includes('show cart')) {
@@ -378,21 +434,19 @@ function handleVoiceCommand(command, statusElem, resultElem) {
         statusElem.textContent = 'Ready to checkout!';
         return;
     }
-    // Remove from cart: "remove [product] from cart"
-    if (cmd.startsWith('remove ')) {
-        const match = cmd.match(/remove (.+) from cart/);
-        if (match && match[1]) {
-            const productName = match[1].trim();
-            const product = products.find(p => p.name.toLowerCase().includes(productName));
-            if (product) {
-                removeFromCart(product.id);
-                statusElem.textContent = `Removed ${product.name} from cart.`;
-                updateCartDisplay();
-            } else {
-                statusElem.textContent = `Product not found: ${productName}`;
-            }
-            return;
+    // Remove from cart: 'remove [item name] from cart' or 'remove [item name]'
+    let removeMatch = cmd.match(/^remove\s+(.+?)(?:\s+from cart)?$/);
+    if (removeMatch) {
+        const productName = removeMatch[1].trim();
+        const product = findProductByName(productName);
+        if (product) {
+            removeFromCart(product.id);
+            statusElem.textContent = `Removed ${product.name} from cart.`;
+            updateCartDisplay();
+        } else {
+            statusElem.textContent = `Product not found: ${productName}`;
         }
+        return;
     }
     statusElem.textContent = 'Sorry, command not recognized.';
 }
@@ -405,6 +459,24 @@ document.addEventListener('DOMContentLoaded', function() {
     setupVoiceShopping();
     setupLoginModal(); // Add this line
     updateCartDisplay();
+    const quickAddBtn = document.getElementById('quickAddBtn');
+    if (quickAddBtn) {
+        quickAddBtn.onclick = quickAddFrequentItems;
+    }
+    const aiBtn = document.getElementById('aiBtn');
+    if (aiBtn) {
+        aiBtn.onclick = function() {
+            fetch('/api/assistant/recommend', {
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                showRecommendationsModal(data.items || []);
+            });
+        };
+    }
 });
 
 function initializeApp() {
@@ -1138,9 +1210,7 @@ function showNotification(message, type = 'info') {
         animation: slideIn 0.3s ease;
         background: ${type === 'success' ? '#56ab2f' : type === 'error' ? '#ff6b6b' : '#667eea'};
     `;
-    
     document.body.appendChild(notification);
-    
     // Remove after 3 seconds
     setTimeout(() => {
         notification.style.animation = 'slideOut 0.3s ease';
@@ -1150,23 +1220,6 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-function toggleQuickActions() {
-    // Implementation for floating action button
-    showNotification('Quick actions coming soon!', 'info');
-}
-
 // Add CSS animations
 const style = document.createElement('style');
 style.textContent = `
@@ -1174,14 +1227,77 @@ style.textContent = `
         from { transform: translateX(100%); opacity: 0; }
         to { transform: translateX(0); opacity: 1; }
     }
-    
     @keyframes slideOut {
         from { transform: translateX(0); opacity: 1; }
         to { transform: translateX(100%); opacity: 0; }
     }
 `;
-document.head.appendChild(style); 
+document.head.appendChild(style);
 
 document.addEventListener('DOMContentLoaded', () => {
     renderProductGrid();
 });
+
+function quickAddFrequentItems() {
+    fetch('/api/orders/frequent', {
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.items && data.items.length > 0) {
+            data.items.forEach(item => {
+                addToCart(item.product_id);
+            });
+            showNotification('Quick order: frequent items added to cart!', 'success');
+        } else {
+            showNotification('No frequent items found.', 'info');
+        }
+    });
+}
+
+// Create and show recommendations modal with product cards
+function showRecommendationsModal(items) {
+    let modal = document.getElementById('recommendationsModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'recommendationsModal';
+        modal.className = 'modal-glass';
+        modal.innerHTML = `
+            <div class="modal-content-glass" style="max-width: 500px;">
+                <span class="close" style="cursor:pointer;float:right;font-size:1.5rem;">&times;</span>
+                <h2>AI Recommendations</h2>
+                <div id="recommendationsList" class="recommendations-list"></div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.querySelector('.close').onclick = function() {
+            modal.style.display = 'none';
+        };
+    }
+    const list = modal.querySelector('#recommendationsList');
+    list.innerHTML = '';
+    if (!items.length) {
+        list.innerHTML = '<div style="color:#b2fefa;text-align:center;">No recommendations found.</div>';
+    } else {
+        items.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'recommendation-card';
+            card.style = 'background: rgba(255,255,255,0.08); border-radius: 14px; margin: 1rem 0; padding: 1.2rem; box-shadow: 0 2px 12px rgba(80,200,255,0.07); display: flex; align-items: center; justify-content: space-between;';
+            card.innerHTML = `
+                <div>
+                    <div style="font-weight:600;font-size:1.1rem;color:#fff;">${item.product_name}</div>
+                    <div style="color:#4fc3f7;font-size:1rem;">$${item.price.toFixed(2)}</div>
+                </div>
+                <button class="btn-glass add-recommend-btn">Add to Cart</button>
+            `;
+            card.querySelector('.add-recommend-btn').onclick = function() {
+                addToCart(item.product_id);
+                showNotification(`${item.product_name} added to cart!`, 'success');
+            };
+            list.appendChild(card);
+        });
+    }
+    modal.style.display = 'flex';
+}

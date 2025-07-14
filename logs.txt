@@ -49,3 +49,8 @@
 - Added a product info panel that displays product name, description, and price, and auto-hides after 2.5 seconds
 - Used A-Frame's event-set for hover highlight and onclick for interactivity
 - Added supporting JavaScript function `showProductInfo` in vr.html 
+
+## 2024-12-20 - Voice Input Continuous Listening & End Button
+- Enhanced voice input system to keep listening for commands until the user clicks the new 'End' button or closes the modal
+- Added an 'End' button to the voice shopping modal for explicit control
+- Fixed the error message shown when ending voice input so it no longer displays 'error: no speech' and instead shows a friendly message 

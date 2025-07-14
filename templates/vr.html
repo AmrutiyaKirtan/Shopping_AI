@@ -1,463 +1,361 @@
 <!DOCTYPE html>
 <html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Phase 1 VR Store</title>
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <style> body { margin:0; } </style>
+</head>
+<body>
+<a-scene background="color: #10131a">
+  <!-- Ambient and Directional Lighting -->
+  <a-entity light="type: ambient; color: #b2ebf2; intensity: 0.7"></a-entity>
+  <a-entity light="type: directional; color: #fff; intensity: 0.5" position="0 5 5"></a-entity>
+
+  <!-- Floor (glass effect) -->
+  <a-plane position="0 0 0" rotation="-90 0 0" width="14" height="14"
+           color="#e0e0e0" opacity="0.18" material="side: double; transparent: true;"></a-plane>
+
+  <!-- Walls (glassmorphic) -->
+  <a-box position="0 2 -7" width="14" height="4" depth="0.2" color="#b0bec5" opacity="0.13"></a-box>
+  <a-box position="-7 2 0" width="0.2" height="4" depth="14" color="#b0bec5" opacity="0.13"></a-box>
+  <a-box position="7 2 0" width="0.2" height="4" depth="14" color="#b0bec5" opacity="0.13"></a-box>
+  <a-box position="0 4 0" width="14" height="0.2" depth="14" color="#cfd8dc" opacity="0.10"></a-box>
+
+  <!-- Shelves (glass) -->
+  <a-box position="-3 1 -3" width="4" height="0.18" depth="1.2" color="#fff" opacity="0.18" material="side: double; transparent: true;"></a-box>
+  <a-box position="3 1 -3" width="4" height="0.18" depth="1.2" color="#fff" opacity="0.18" material="side: double; transparent: true;"></a-box>
+
+  <!-- Product Boxes (rounded, glowing) -->
+  <a-box position="-4.2 1.3 -3" width="0.5" height="0.5" depth="0.5" color="#4fc3f7" opacity="0.95"
+         material="roughness: 0.2; metalness: 0.7; emissive: #4fc3f7; emissiveIntensity: 0.15;" radius="0.12"></a-box>
+  <a-box position="-3.5 1.3 -3" width="0.5" height="0.5" depth="0.5" color="#43a047" opacity="0.95"
+         material="roughness: 0.2; metalness: 0.7; emissive: #43a047; emissiveIntensity: 0.15;" radius="0.12"></a-box>
+  <a-box position="-2.8 1.3 -3" width="0.5" height="0.5" depth="0.5" color="#039be5" opacity="0.95"
+         material="roughness: 0.2; metalness: 0.7; emissive: #039be5; emissiveIntensity: 0.15;" radius="0.12"></a-box>
+  <a-box position="-2.1 1.3 -3" width="0.5" height="0.5" depth="0.5" color="#e53935" opacity="0.95"
+         material="roughness: 0.2; metalness: 0.7; emissive: #e53935; emissiveIntensity: 0.15;" radius="0.12"></a-box>
+
+  <!-- Checkout Counter (glass) -->
+  <a-box position="0 0.6 4" width="3" height="1.2" depth="1" color="#fff" opacity="0.18" material="side: double; transparent: true;"></a-box>
+  <a-box position="0 1.2 4.6" width="1" height="0.2" depth="0.2" color="#fffde7" opacity="0.18"></a-box>
+
+  <!-- Product Info Panel (glassmorphic) -->
+  <a-entity id="productInfoPanel" visible="false" position="0 2 -2">
+    <a-plane width="2.2" height="1.2" color="#fff" opacity="0.18" material="side: double; transparent: true;" radius="0.18"></a-plane>
+    <a-text id="productInfoText" value="" color="#222" align="center" position="0 0.2 0.01" width="1.8"></a-text>
+    <a-box id="addToCartBtn" position="0 -0.3 0.05" width="0.8" height="0.3" depth="0.1"
+           color="#4fc3f7" opacity="0.95" class="clickable" visible="false"></a-box>
+    <a-text id="addToCartLabel" value="Add to Cart" color="#fff" align="center"
+            position="0 -0.3 0.07" width="1" visible="false"></a-text>
+    <a-text id="cartConfirmMsg" value="" color="#388e3c" align="center"
+            position="0 -0.6 0.07" width="1.5" visible="false"></a-text>
+  </a-entity>
+
+  <!-- Camera and controls -->
+  <a-entity camera look-controls wasd-controls position="0 1.6 6">
+    <a-cursor color="#FF5722" fuse="true" fuse-timeout="500"
+      geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
+      material="color: #FF5722; shader: flat">
+    </a-cursor>
+  </a-entity>
+</a-scene>
+</body>
+</html>
+<!DOCTYPE html>
+<html>
   <head>
-    <meta charset="utf-8">
-    <title>VirtualMart - Premium VR Shopping Experience</title>
+    <meta charset="utf-8" />
+    <title>VR Store - Phase 2</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <style>
       body {
         margin: 0;
-        font-family: 'Arial', sans-serif;
-        background: #000;
-      }
-      #ui-overlay {
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        color: white;
-        font-size: 18px;
-        z-index: 1000;
-        background: rgba(0,0,0,0.7);
-        padding: 15px;
-        border-radius: 8px;
-        backdrop-filter: blur(10px);
-      }
-      #instructions {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        color: white;
-        font-size: 14px;
-        z-index: 1000;
-        background: rgba(0,0,0,0.7);
-        padding: 10px;
-        border-radius: 8px;
-        backdrop-filter: blur(10px);
       }
     </style>
   </head>
   <body>
-    <div id="ui-overlay">
-      <div>🛍️ <strong>VirtualMart</strong></div>
-      <div>Premium VR Shopping Experience</div>
-    </div>
-    
-    <div id="instructions">
-      <div><strong>Controls:</strong></div>
-      <div>WASD - Move | Mouse - Look Around | Click - Interact</div>
-    </div>
-
-    <a-scene background="color: #87CEEB" vr-mode-ui="enabled: true">
-      <!-- Assets -->
+    <a-scene background="color: #e6f2ff" shadow="type: pcfsoft">
+      <!-- ASSETS -->
       <a-assets>
-        <!-- Textures -->
-        <a-mixin id="product-hover" 
-                 animation__mouseenter="property: scale; to: 1.1 1.1 1.1; startEvents: mouseenter; dur: 200"
-                 animation__mouseleave="property: scale; to: 1 1 1; startEvents: mouseleave; dur: 200">
-        </a-mixin>
+        <img id="banana" src="https://via.placeholder.com/256x256.png?text=Banana" />
+        <img id="apple" src="https://via.placeholder.com/256x256.png?text=Apple" />
+        <img id="milk" src="https://via.placeholder.com/256x256.png?text=Milk" />
+        <img id="bread" src="https://via.placeholder.com/256x256.png?text=Bread" />
+        <img id="floor" src="https://cdn.aframe.io/a-painter/images/floor.jpg" />
       </a-assets>
 
-      <!-- Store Environment -->
-      <!-- Enhanced Floor with tile pattern -->
-      <a-plane position="0 0 0" rotation="-90 0 0" width="20" height="20" 
-               color="#f5f5f5" 
-               material="roughness: 0.8; metalness: 0.1">
-      </a-plane>
-      
-      <!-- Tile lines for floor pattern -->
-      <a-entity id="floor-lines">
-        <!-- Horizontal lines -->
-        <a-box position="0 0.01 -5" width="20" height="0.02" depth="0.05" color="#e0e0e0"></a-box>
-        <a-box position="0 0.01 0" width="20" height="0.02" depth="0.05" color="#e0e0e0"></a-box>
-        <a-box position="0 0.01 5" width="20" height="0.02" depth="0.05" color="#e0e0e0"></a-box>
-        <!-- Vertical lines -->
-        <a-box position="-5 0.01 0" width="0.05" height="0.02" depth="20" color="#e0e0e0"></a-box>
-        <a-box position="0 0.01 0" width="0.05" height="0.02" depth="20" color="#e0e0e0"></a-box>
-        <a-box position="5 0.01 0" width="0.05" height="0.02" depth="20" color="#e0e0e0"></a-box>
-      </a-entity>
-
-      <!-- Modern Glass Walls -->
-      <a-box position="0 2.5 -10" width="20" height="5" depth="0.3" 
-             color="#ffffff" 
-             material="opacity: 0.3; transparent: true; roughness: 0.1; metalness: 0.9">
-      </a-box>
-      <a-box position="-10 2.5 0" width="0.3" height="5" depth="20" 
-             color="#ffffff" 
-             material="opacity: 0.3; transparent: true; roughness: 0.1; metalness: 0.9">
-      </a-box>
-      <a-box position="10 2.5 0" width="0.3" height="5" depth="20" 
-             color="#ffffff" 
-             material="opacity: 0.3; transparent: true; roughness: 0.1; metalness: 0.9">
-      </a-box>
-      
-      <!-- Modern Ceiling with lighting panels -->
-      <a-box position="0 5 0" width="20" height="0.2" depth="20" color="#ffffff"></a-box>
-      <a-box position="-3 4.8 -3" width="2" height="0.1" depth="2" 
-             color="#ffffff" 
-             material="emissive: #ffffff; emissiveIntensity: 0.3">
-      </a-box>
-      <a-box position="3 4.8 -3" width="2" height="0.1" depth="2" 
-             color="#ffffff" 
-             material="emissive: #ffffff; emissiveIntensity: 0.3">
-      </a-box>
-      <a-box position="0 4.8 3" width="2" height="0.1" depth="2" 
-             color="#ffffff" 
-             material="emissive: #ffffff; emissiveIntensity: 0.3">
-      </a-box>
-
-      <!-- Store Entrance -->
-      <a-box position="0 2.5 9.5" width="4" height="3" depth="0.2" 
-             color="#2196F3" 
-             material="roughness: 0.3; metalness: 0.7">
-      </a-box>
-      <a-text value="VIRTUALMART" position="0 3.5 9.6" 
-              align="center" color="#ffffff" 
-              font="kelsonsans" width="8">
-      </a-text>
-
-      <!-- Product Display Areas -->
-      
-      <!-- Electronics Section -->
-      <a-entity id="electronics-section" position="-6 0 -6">
-        <!-- Section Header -->
-        <a-text value="ELECTRONICS" position="0 3 0" 
-                align="center" color="#1976D2" 
-                font="kelsonsans" width="6">
-        </a-text>
-        
-        <!-- Modern Display Shelf -->
-        <a-box position="0 0.8 0" width="6" height="0.1" depth="2" 
-               color="#ffffff" 
-               material="roughness: 0.2; metalness: 0.8">
-        </a-box>
-        <a-box position="-2.5 0.4 0" width="0.1" height="0.8" depth="2" color="#e0e0e0"></a-box>
-        <a-box position="2.5 0.4 0" width="0.1" height="0.8" depth="2" color="#e0e0e0"></a-box>
-        
-        <!-- Products with hover effects -->
-        <a-box position="-2 1.1 0" width="0.8" height="0.5" depth="0.6" 
-               color="#1a1a1a" 
-               mixin="product-hover"
-               class="product"
-               data-name="Smartphone"
-               data-price="$699">
-          <a-text value="📱" position="0 0.3 0.31" align="center" color="#ffffff" width="4"></a-text>
-        </a-box>
-        
-        <a-box position="-0.5 1.1 0" width="0.8" height="0.5" depth="0.6" 
-               color="#2c2c2c" 
-               mixin="product-hover"
-               class="product"
-               data-name="Laptop"
-               data-price="$1299">
-          <a-text value="💻" position="0 0.3 0.31" align="center" color="#ffffff" width="4"></a-text>
-        </a-box>
-        
-        <a-box position="1 1.1 0" width="0.8" height="0.5" depth="0.6" 
-               color="#1565C0" 
-               mixin="product-hover"
-               class="product"
-               data-name="Tablet"
-               data-price="$499">
-          <a-text value="📄" position="0 0.3 0.31" align="center" color="#ffffff" width="4"></a-text>
-        </a-box>
-        
-        <a-box position="2.5 1.1 0" width="0.8" height="0.5" depth="0.6" 
-               color="#E91E63" 
-               mixin="product-hover"
-               class="product"
-               data-name="Headphones"
-               data-price="$199">
-          <a-text value="🎧" position="0 0.3 0.31" align="center" color="#ffffff" width="4"></a-text>
-        </a-box>
-      </a-entity>
-
-      <!-- Fashion Section -->
-      <a-entity id="fashion-section" position="6 0 -6">
-        <a-text value="FASHION" position="0 3 0" 
-                align="center" color="#E91E63" 
-                font="kelsonsans" width="6">
-        </a-text>
-        
-        <a-box position="0 0.8 0" width="6" height="0.1" depth="2" 
-               color="#ffffff" 
-               material="roughness: 0.2; metalness: 0.8">
-        </a-box>
-        <a-box position="-2.5 0.4 0" width="0.1" height="0.8" depth="2" color="#e0e0e0"></a-box>
-        <a-box position="2.5 0.4 0" width="0.1" height="0.8" depth="2" color="#e0e0e0"></a-box>
-        
-        <a-box position="-2 1.1 0" width="0.8" height="0.5" depth="0.6" 
-               color="#FF6B6B" 
-               mixin="product-hover"
-               class="product"
-               data-name="T-Shirt"
-               data-price="$29">
-          <a-text value="👕" position="0 0.3 0.31" align="center" color="#ffffff" width="4"></a-text>
-        </a-box>
-        
-        <a-box position="-0.5 1.1 0" width="0.8" height="0.5" depth="0.6" 
-               color="#4ECDC4" 
-               mixin="product-hover"
-               class="product"
-               data-name="Jeans"
-               data-price="$79">
-          <a-text value="👖" position="0 0.3 0.31" align="center" color="#ffffff" width="4"></a-text>
-        </a-box>
-        
-        <a-box position="1 1.1 0" width="0.8" height="0.5" depth="0.6" 
-               color="#45B7D1" 
-               mixin="product-hover"
-               class="product"
-               data-name="Dress"
-               data-price="$89">
-          <a-text value="👗" position="0 0.3 0.31" align="center" color="#ffffff" width="4"></a-text>
-        </a-box>
-        
-        <a-box position="2.5 1.1 0" width="0.8" height="0.5" depth="0.6" 
-               color="#F7B801" 
-               mixin="product-hover"
-               class="product"
-               data-name="Shoes"
-               data-price="$129">
-          <a-text value="👟" position="0 0.3 0.31" align="center" color="#ffffff" width="4"></a-text>
-        </a-box>
-      </a-entity>
-
-      <!-- Home & Garden Section -->
-      <a-entity id="home-section" position="0 0 -2">
-        <a-text value="HOME & GARDEN" position="0 3 0" 
-                align="center" color="#4CAF50" 
-                font="kelsonsans" width="6">
-        </a-text>
-        
-        <a-box position="0 0.8 0" width="8" height="0.1" depth="2" 
-               color="#ffffff" 
-               material="roughness: 0.2; metalness: 0.8">
-        </a-box>
-        <a-box position="-3.5 0.4 0" width="0.1" height="0.8" depth="2" color="#e0e0e0"></a-box>
-        <a-box position="3.5 0.4 0" width="0.1" height="0.8" depth="2" color="#e0e0e0"></a-box>
-        
-        <a-box position="-2.5 1.1 0" width="0.8" height="0.5" depth="0.6" 
-               color="#8BC34A" 
-               mixin="product-hover"
-               class="product"
-               data-name="Plant"
-               data-price="$25">
-          <a-text value="🌱" position="0 0.3 0.31" align="center" color="#ffffff" width="4"></a-text>
-        </a-box>
-        
-        <a-box position="-1 1.1 0" width="0.8" height="0.5" depth="0.6" 
-               color="#FF9800" 
-               mixin="product-hover"
-               class="product"
-               data-name="Lamp"
-               data-price="$59">
-          <a-text value="💡" position="0 0.3 0.31" align="center" color="#ffffff" width="4"></a-text>
-        </a-box>
-        
-        <a-box position="0.5 1.1 0" width="0.8" height="0.5" depth="0.6" 
-               color="#795548" 
-               mixin="product-hover"
-               class="product"
-               data-name="Vase"
-               data-price="$39">
-          <a-text value="🏺" position="0 0.3 0.31" align="center" color="#ffffff" width="4"></a-text>
-        </a-box>
-        
-        <a-box position="2 1.1 0" width="0.8" height="0.5" depth="0.6" 
-               color="#607D8B" 
-               mixin="product-hover"
-               class="product"
-               data-name="Mirror"
-               data-price="$99">
-          <a-text value="🪞" position="0 0.3 0.31" align="center" color="#ffffff" width="4"></a-text>
-        </a-box>
-      </a-entity>
-
-      <!-- Premium Checkout Counter -->
-      <a-entity id="checkout-counter" position="0 0 6">
-        <a-box position="0 0.9 0" width="5" height="1.8" depth="1.2" 
-               color="#37474F" 
-               material="roughness: 0.3; metalness: 0.7">
-        </a-box>
-        
-        <!-- Counter top -->
-        <a-box position="0 1.8 0" width="5.2" height="0.1" depth="1.4" 
-               color="#ffffff" 
-               material="roughness: 0.1; metalness: 0.9">
-        </a-box>
-        
-        <!-- Cash register -->
-        <a-box position="0 2.1 0.3" width="1.5" height="0.6" depth="0.8" 
-               color="#2196F3" 
-               material="roughness: 0.2; metalness: 0.8">
-        </a-box>
-        
-        <!-- Display screen -->
-        <a-box position="0 2.4 0.6" width="1.2" height="0.8" depth="0.05" 
-               color="#000000" 
-               material="emissive: #00FF00; emissiveIntensity: 0.5">
-        </a-box>
-        
-        <a-text value="CHECKOUT\nThank you for shopping!" 
-                position="0 2.4 0.63" 
-                align="center" color="#00FF00" 
-                font="kelsonsans" width="3">
-        </a-text>
-        
-        <!-- Checkout sign -->
-        <a-text value="💳 CHECKOUT" position="0 2.8 0" 
-                align="center" color="#2196F3" 
-                font="kelsonsans" width="6">
-        </a-text>
-      </a-entity>
-
-      <!-- Shopping Cart -->
-      <a-entity id="shopping-cart" position="2 0 7">
-        <a-box position="0 0.5 0" width="1" height="1" depth="1.5" 
-               color="#FF6B6B" 
-               material="roughness: 0.4; metalness: 0.6">
-        </a-box>
-        <a-text value="🛒" position="0 1.2 0" align="center" color="#ffffff" width="6"></a-text>
-      </a-entity>
-
-      <!-- Directional Signs -->
-      <a-entity id="signs">
-        <a-text value="← ELECTRONICS" position="-6 2.2 -3" 
-                align="center" color="#1976D2" 
-                font="kelsonsans" width="4">
-        </a-text>
-        <a-text value="FASHION →" position="6 2.2 -3" 
-                align="center" color="#E91E63" 
-                font="kelsonsans" width="4">
-        </a-text>
-        <a-text value="HOME & GARDEN" position="0 2.2 1" 
-                align="center" color="#4CAF50" 
-                font="kelsonsans" width="4">
-        </a-text>
-      </a-entity>
-
-      <!-- Enhanced Lighting System -->
-      <a-entity light="type: ambient; color: #ffffff; intensity: 0.6"></a-entity>
-      <a-entity light="type: directional; color: #ffffff; intensity: 0.8" position="0 8 5"></a-entity>
-      <a-entity light="type: point; color: #ffffff; intensity: 0.5" position="-6 3 -6"></a-entity>
-      <a-entity light="type: point; color: #ffffff; intensity: 0.5" position="6 3 -6"></a-entity>
-      <a-entity light="type: point; color: #ffffff; intensity: 0.5" position="0 3 6"></a-entity>
-      
-      <!-- Accent lighting -->
-      <a-entity light="type: spot; color: #2196F3; intensity: 0.3; angle: 30" position="0 4 6" rotation="-30 0 0"></a-entity>
-
-      <!-- Interactive Camera with Enhanced Controls -->
-      <a-entity id="player" position="0 1.6 8">
-        <a-camera look-controls wasd-controls 
-                  mouse-cursor="rayOrigin: mouse"
-                  cursor="fuse: false; rayOrigin: mouse"
-                  raycaster="objects: .product">
+      <!-- CAMERA -->
+      <a-entity position="0 1.6 0">
+        <a-camera>
+          <a-cursor color="#ff4081"></a-cursor>
         </a-camera>
       </a-entity>
 
-      <!-- Cursor for interaction (add to camera entity) -->
-      <a-entity camera look-controls wasd-controls position="0 1.6 6">
-        <a-cursor
-          color="#FF5722"
-          fuse="true"
-          fuse-timeout="500"
-          geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
-          material="color: #FF5722; shader: flat">
-        </a-cursor>
+      <!-- LIGHTS -->
+      <a-entity light="type: ambient; color: #FFF; intensity: 1.2"></a-entity>
+      <a-entity light="type: directional; color: #FFF; intensity: 0.6" position="1 5 2"></a-entity>
+
+      <!-- FLOOR -->
+      <a-plane rotation="-90 0 0" width="30" height="30" src="#floor" repeat="10 10"></a-plane>
+
+      <!-- WALLS -->
+      <a-box position="0 2 -15" width="30" height="4" depth="0.2" color="#ccc"></a-box>
+      <a-box position="-15 2 0" width="30" height="4" depth="0.2" rotation="0 90 0" color="#ccc"></a-box>
+      <a-box position="15 2 0" width="30" height="4" depth="0.2" rotation="0 90 0" color="#ccc"></a-box>
+
+      <!-- SHOPPING CART ICON -->
+      <a-box position="0.5 2 -1.5" width="0.3" height="0.3" depth="0.3" color="#ff9800"></a-box>
+      <a-text
+        value="Cart (0)"
+        position="0.5 2.4 -1.5"
+        align="center"
+        width="2"
+        color="#333"
+        id="cartLabel"
+      ></a-text>
+
+      <!-- CHECKOUT COUNTER -->
+      <a-box position="0 0.5 -3" width="3" height="1" depth="1.5" color="#795548"></a-box>
+      <a-text
+        value="CHECKOUT"
+        position="0 1.5 -3"
+        align="center"
+        width="4"
+        color="#fff"
+      ></a-text>
+      <a-plane
+        position="0 1 -2.4"
+        width="2"
+        height="1"
+        color="#eeeeee"
+      ></a-plane>
+
+      <!-- AISLES -->
+      <!-- Aisle 1 -->
+      <a-entity position="-8 0 -6">
+        <a-plane
+          class="product"
+          src="#banana"
+          width="1"
+          height="1"
+          position="0 1 0"
+          data-name="Banana"
+          data-price="0.99"
+          animation="property: rotation; to: 0 360 0; loop: true; dur: 4000"
+        ></a-plane>
+        <a-plane
+          class="product"
+          src="#apple"
+          width="1"
+          height="1"
+          position="2 1 0"
+          data-name="Apple"
+          data-price="1.29"
+          animation="property: rotation; to: 0 -360 0; loop: true; dur: 4000"
+        ></a-plane>
       </a-entity>
 
-      <!-- Example interactive product box -->
-      <a-box position="-4.2 1.3 -3" width="0.5" height="0.5" depth="0.5" color="#ffb300"
-             class="clickable"
-             event-set__enter="_event: mouseenter; color: #fff176"
-             event-set__leave="_event: mouseleave; color: #ffb300"
-             onclick="showProductInfo('Banana', 'A delicious banana!', 2.99)">
-      </a-box>
-
-      <!-- Particle System for Ambiance -->
-      <a-entity id="particles" position="0 4 0">
-        <a-box position="0 0 0" width="0.1" height="0.1" depth="0.1" 
-               color="#ffffff" 
-               material="opacity: 0.3; transparent: true"
-               animation="property: position; to: 0 -2 0; dur: 3000; loop: true; easing: linear">
-        </a-box>
-        <a-box position="3 0 2" width="0.1" height="0.1" depth="0.1" 
-               color="#ffffff" 
-               material="opacity: 0.3; transparent: true"
-               animation="property: position; to: 3 -2 2; dur: 4000; loop: true; easing: linear">
-        </a-box>
-        <a-box position="-2 0 -1" width="0.1" height="0.1" depth="0.1" 
-               color="#ffffff" 
-               material="opacity: 0.3; transparent: true"
-               animation="property: position; to: -2 -2 -1; dur: 3500; loop: true; easing: linear">
-        </a-box>
+      <!-- Aisle 2 -->
+      <a-entity position="0 0 -6">
+        <a-plane
+          class="product"
+          src="#milk"
+          width="1"
+          height="1"
+          position="0 1 0"
+          data-name="Milk"
+          data-price="1.79"
+          animation="property: rotation; to: 0 360 0; loop: true; dur: 4000"
+        ></a-plane>
+        <a-plane
+          class="product"
+          src="#bread"
+          width="1"
+          height="1"
+          position="2 1 0"
+          data-name="Bread"
+          data-price="2.49"
+          animation="property: rotation; to: 0 -360 0; loop: true; dur: 4000"
+        ></a-plane>
       </a-entity>
 
-      <!-- Product Information Display -->
-      <a-text id="product-info" 
-              value="" 
-              position="0 2.5 5" 
-              align="center" 
-              color="#2196F3" 
-              font="kelsonsans" 
-              width="6"
-              visible="false">
-      </a-text>
-
-      <!-- Product Info Panel (hidden by default) -->
-      <a-entity id="productInfoPanel" visible="false" position="0 2 -2">
-        <a-plane width="2" height="1" color="#fff" opacity="0.95"></a-plane>
-        <a-text id="productInfoText" value="" color="#222" align="center" position="0 0 0.01" width="1.8"></a-text>
+      <!-- Aisle 3 -->
+      <a-entity position="8 0 -6">
+        <a-plane
+          class="product"
+          src="#apple"
+          width="1"
+          height="1"
+          position="0 1 0"
+          data-name="Apple (Red)"
+          data-price="1.49"
+          animation="property: rotation; to: 0 360 0; loop: true; dur: 4000"
+        ></a-plane>
+        <a-plane
+          class="product"
+          src="#banana"
+          width="1"
+          height="1"
+          position="2 1 0"
+          data-name="Banana (Organic)"
+          data-price="1.19"
+          animation="property: rotation; to: 0 -360 0; loop: true; dur: 4000"
+        ></a-plane>
       </a-entity>
-
     </a-scene>
 
     <script>
-      // Interactive product system
-      document.addEventListener('DOMContentLoaded', function() {
-        const products = document.querySelectorAll('.product');
-        const productInfo = document.querySelector('#product-info');
-        
-        products.forEach(product => {
-          product.addEventListener('mouseenter', function() {
-            const name = this.getAttribute('data-name');
-            const price = this.getAttribute('data-price');
-            productInfo.setAttribute('value', `${name}\n${price}\nClick to add to cart`);
-            productInfo.setAttribute('visible', 'true');
-          });
-          
-          product.addEventListener('mouseleave', function() {
-            productInfo.setAttribute('visible', 'false');
-          });
-          
-          product.addEventListener('click', function() {
-            const name = this.getAttribute('data-name');
-            const price = this.getAttribute('data-price');
-            
-            // Add to cart animation
-            this.setAttribute('animation', 'property: position; to: 2 1 7; dur: 1000; easing: easeInOutQuad');
-            
-            // Show confirmation
-            productInfo.setAttribute('value', `${name} added to cart!\n${price}`);
-            productInfo.setAttribute('color', '#4CAF50');
-            
-            setTimeout(() => {
-              productInfo.setAttribute('visible', 'false');
-              productInfo.setAttribute('color', '#2196F3');
-            }, 2000);
+      document.addEventListener("DOMContentLoaded", () => {
+        let cartCount = 0;
+        const products = document.querySelectorAll(".product");
+        const cartLabel = document.querySelector("#cartLabel");
+
+        products.forEach((product) => {
+          product.addEventListener("click", () => {
+            const name = product.getAttribute("data-name");
+            const price = product.getAttribute("data-price");
+
+            cartCount++;
+            cartLabel.setAttribute("value", `Cart (${cartCount})`);
+
+            // Optional: Add animation on click
+            product.setAttribute("animation__click", {
+              property: "scale",
+              to: "1.2 1.2 1.2",
+              dur: 200,
+              loop: false,
+              dir: "alternate",
+            });
+
+            console.log(`Added to cart: ${name} - $${price}`);
           });
         });
       });
-
-      function showProductInfo(name, desc, price) {
-        var panel = document.querySelector('#productInfoPanel');
-        var text = document.querySelector('#productInfoText');
-        text.setAttribute('value', `${name}\n${desc}\n$${price.toFixed(2)}`);
-        panel.setAttribute('visible', 'true');
-        setTimeout(() => {
-          panel.setAttribute('visible', 'false');
-        }, 2500); // Hide after 2.5 seconds
+    </script>
+  </body>
+</html>
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>VR Store - Phase 3</title>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <style>
+      body {
+        margin: 0;
       }
+    </style>
+  </head>
+  <body>
+    <a-scene background="color: #f0f8ff" shadow="type: pcfsoft">
+      <!-- ASSETS -->
+      <a-assets>
+        <img id="banana" src="https://via.placeholder.com/256x256.png?text=Banana" />
+        <img id="apple" src="https://via.placeholder.com/256x256.png?text=Apple" />
+        <img id="milk" src="https://via.placeholder.com/256x256.png?text=Milk" />
+        <img id="bread" src="https://via.placeholder.com/256x256.png?text=Bread" />
+        <img id="floor" src="https://cdn.aframe.io/a-painter/images/floor.jpg" />
+      </a-assets>
+
+      <!-- CAMERA -->
+      <a-entity position="0 1.6 0">
+        <a-camera>
+          <a-cursor color="#ff4081"></a-cursor>
+        </a-camera>
+      </a-entity>
+
+      <!-- LIGHTING -->
+      <a-entity light="type: ambient; intensity: 1.2; color: #ffffff"></a-entity>
+      <a-entity light="type: directional; intensity: 0.6" position="1 5 2"></a-entity>
+
+      <!-- FLOOR & WALLS -->
+      <a-plane rotation="-90 0 0" width="30" height="30" src="#floor" repeat="10 10"></a-plane>
+      <a-box position="0 2 -15" width="30" height="4" depth="0.2" color="#ccc"></a-box>
+
+      <!-- SHOPPING CART LABEL -->
+      <a-box position="0.5 2 -1.5" width="0.3" height="0.3" depth="0.3" color="#ff9800"></a-box>
+      <a-text id="cartLabel" value="Cart (0)" position="0.5 2.4 -1.5" align="center" width="2" color="#333"></a-text>
+
+      <!-- CHECKOUT COUNTER -->
+      <a-box position="0 0.5 -3" width="3" height="1" depth="1.5" color="#795548"></a-box>
+      <a-text value="CHECKOUT" position="0 1.5 -3" align="center" width="4" color="#fff"></a-text>
+
+      <!-- View Cart Button -->
+      <a-box id="viewCartBtn" position="0 1.1 -2.4" width="1" height="0.4" depth="0.1" color="#2196f3" class="clickable">
+        <a-text value="View Cart" color="#fff" align="center" width="2" position="0 0 0.06"></a-text>
+      </a-box>
+
+      <!-- Cart Summary Panel -->
+      <a-entity id="cartPanel" visible="false" position="0 2.5 -3">
+        <a-plane width="3" height="2" color="#ffffff" opacity="0.95"></a-plane>
+        <a-text id="cartSummaryText" value="" position="0 0.6 0.01" width="2.8" color="#222" align="center"></a-text>
+      </a-entity>
+
+      <!-- AISLE 1 -->
+      <a-entity position="-8 0 -6">
+        <a-plane class="product" src="#banana" width="1" height="1" position="0 1 0" data-name="Banana" data-price="0.99" animation="property: rotation; to: 0 360 0; loop: true; dur: 4000"></a-plane>
+        <a-plane class="product" src="#apple" width="1" height="1" position="2 1 0" data-name="Apple" data-price="1.29" animation="property: rotation; to: 0 -360 0; loop: true; dur: 4000"></a-plane>
+      </a-entity>
+
+      <!-- AISLE 2 -->
+      <a-entity position="0 0 -6">
+        <a-plane class="product" src="#milk" width="1" height="1" position="0 1 0" data-name="Milk" data-price="1.79" animation="property: rotation; to: 0 360 0; loop: true; dur: 4000"></a-plane>
+        <a-plane class="product" src="#bread" width="1" height="1" position="2 1 0" data-name="Bread" data-price="2.49" animation="property: rotation; to: 0 -360 0; loop: true; dur: 4000"></a-plane>
+      </a-entity>
+
+      <!-- AISLE 3 -->
+      <a-entity position="8 0 -6">
+        <a-plane class="product" src="#apple" width="1" height="1" position="0 1 0" data-name="Apple (Red)" data-price="1.49" animation="property: rotation; to: 0 360 0; loop: true; dur: 4000"></a-plane>
+        <a-plane class="product" src="#banana" width="1" height="1" position="2 1 0" data-name="Banana (Organic)" data-price="1.19" animation="property: rotation; to: 0 -360 0; loop: true; dur: 4000"></a-plane>
+      </a-entity>
+    </a-scene>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        let cart = [];
+        const products = document.querySelectorAll(".product");
+        const cartLabel = document.querySelector("#cartLabel");
+        const cartPanel = document.querySelector("#cartPanel");
+        const cartText = document.querySelector("#cartSummaryText");
+        const viewCartBtn = document.querySelector("#viewCartBtn");
+
+        function updateCartDisplay() {
+          cartLabel.setAttribute("value", `Cart (${cart.length})`);
+        }
+
+        function showCartPanel() {
+          if (cart.length === 0) {
+            cartText.setAttribute("value", "Your cart is empty.");
+          } else {
+            let summary = cart.map(item => `${item.name} - $${item.price.toFixed(2)}`).join("\n");
+            const total = cart.reduce((sum, item) => sum + item.price, 0).toFixed(2);
+            summary += `\n\nTotal: $${total}`;
+            cartText.setAttribute("value", summary);
+          }
+          cartPanel.setAttribute("visible", true);
+          setTimeout(() => cartPanel.setAttribute("visible", false), 6000);
+        }
+
+        products.forEach(product => {
+          product.addEventListener("click", () => {
+            const name = product.getAttribute("data-name");
+            const price = parseFloat(product.getAttribute("data-price"));
+            cart.push({ name, price });
+            updateCartDisplay();
+
+            product.setAttribute("animation__click", {
+              property: "scale",
+              to: "1.2 1.2 1.2",
+              dur: 150,
+              dir: "alternate",
+              loop: false
+            });
+          });
+        });
+
+        viewCartBtn.addEventListener("click", showCartPanel);
+      });
     </script>
   </body>
 </html>
