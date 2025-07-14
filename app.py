@@ -5,7 +5,7 @@ from flask_socketio import SocketIO, emit
 from dotenv import load_dotenv
 import os
 import pymysql
-import json
+import bcrypt
 import datetime
 from datetime import timedelta
 
@@ -41,18 +41,30 @@ def get_db():
 
 # Hardcoded product list (for demo)
 PRODUCTS = [
-    {"id": 1, "name": "Organic Bananas", "price": 2.99, "category": "Produce"},
-    {"id": 2, "name": "Whole Milk", "price": 3.49, "category": "Dairy"},
-    {"id": 3, "name": "Whole Wheat Bread", "price": 2.99, "category": "Bakery"},
-    {"id": 4, "name": "Chicken Breast", "price": 8.99, "category": "Meat"},
-    {"id": 5, "name": "Greek Yogurt", "price": 4.99, "category": "Dairy"},
+    { "id": 1,  "name": "Organic Bananas",    "price": 2.99, "category": "Produce" },
+    { "id": 2,  "name": "Whole Milk",         "price": 3.49, "category": "Dairy" },
+    { "id": 3,  "name": "Whole Wheat Bread",  "price": 2.99, "category": "Bakery" },
+    { "id": 4,  "name": "Chicken Breast",     "price": 8.99, "category": "Meat" },
+    { "id": 5,  "name": "Greek Yogurt",       "price": 4.99, "category": "Dairy" },
+    { "id": 6,  "name": "Strawberries",       "price": 3.99, "category": "Produce" },
+    { "id": 7,  "name": "Cheddar Cheese",     "price": 5.49, "category": "Dairy" },
+    { "id": 8,  "name": "Orange Juice",       "price": 4.29, "category": "Beverages" },
+    { "id": 9,  "name": "Toothpaste",         "price": 2.99, "category": "Toiletries" },
+    { "id": 10, "name": "Almond Butter",      "price": 6.99, "category": "Pantry" },
+    { "id": 11, "name": "Notebook",           "price": 1.99, "category": "Stationery" },
+    { "id": 12, "name": "Ballpoint Pens",     "price": 2.49, "category": "Stationery" }
 ]
+
 
 # --- ROUTES ---
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', products=PRODUCTS)
 
+@app.route('/vr')
+def vr():
+    return render_template('vr.html')
+# --- Registration ---
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -62,21 +74,21 @@ def register():
         return jsonify({'error': 'Email and password required'}), 400
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("SELECT id FROM shopping_data WHERE user_email=%s", (email,))
+        cursor.execute("SELECT id FROM users WHERE email=%s", (email,))
         if cursor.fetchone():
             return jsonify({'error': 'Email already registered'}), 400
-        # Store password in JSON (for demo only, not secure!)
-        user_data = {"password": password, "cart": [], "preferences": {}, "history": []}
+        hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         cursor.execute(
-            "INSERT INTO shopping_data (user_email, data) VALUES (%s, %s)",
-            (email, json.dumps(user_data))
+            "INSERT INTO users (email, password) VALUES (%s, %s)",
+            (email, hashed)
         )
         db.commit()
-        cursor.execute("SELECT id FROM shopping_data WHERE user_email=%s", (email,))
+        cursor.execute("SELECT id FROM users WHERE email=%s", (email,))
         user = cursor.fetchone()
     access_token = create_access_token(identity=email)
     return jsonify({'token': access_token, 'user_email': email, 'user_id': user['id']}), 201
 
+# --- Login ---
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -84,51 +96,24 @@ def login():
     password = data.get('password')
     db = get_db()
     with db.cursor() as cursor:
-        cursor.execute("SELECT id, data FROM shopping_data WHERE user_email=%s", (email,))
+        cursor.execute("SELECT id, password FROM users WHERE email=%s", (email,))
         user = cursor.fetchone()
         if not user:
             return jsonify({'error': 'User not found'}), 404
-        user_data = json.loads(user['data'])
-        if user_data.get('password') != password:
+        if not bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
             return jsonify({'error': 'Invalid credentials'}), 401
     access_token = create_access_token(identity=email)
     return jsonify({'token': access_token, 'user_email': email, 'user_id': user['id']}), 200
 
+# --- Product List ---
 @app.route('/api/products', methods=['GET'])
 def get_products():
     return jsonify(PRODUCTS)
 
-@app.route('/api/user/data', methods=['GET'])
-@jwt_required()
-def get_user_data():
-    email = get_jwt_identity()
-    db = get_db()
-    with db.cursor() as cursor:
-        cursor.execute("SELECT data FROM shopping_data WHERE user_email=%s", (email,))
-        user = cursor.fetchone()
-        if not user:
-            return jsonify({'error': 'User not found'}), 404
-        return jsonify(json.loads(user['data']))
+# --- Cart Management (in-memory, per-session for demo) ---
+# In a real app, you may want to persist cart items in a DB table
+user_carts = {}  # {email: [{product_id, quantity}]}
 
-@app.route('/api/user/data', methods=['POST'])
-@jwt_required()
-def set_user_data():
-    email = get_jwt_identity()
-    new_data = request.get_json()
-    db = get_db()
-    with db.cursor() as cursor:
-        cursor.execute("SELECT data FROM shopping_data WHERE user_email=%s", (email,))
-        user = cursor.fetchone()
-        if not user:
-            return jsonify({'error': 'User not found'}), 404
-        # Merge new data into existing data
-        user_data = json.loads(user['data'])
-        user_data.update(new_data)
-        cursor.execute("UPDATE shopping_data SET data=%s WHERE user_email=%s", (json.dumps(user_data), email))
-        db.commit()
-    return jsonify({'message': 'User data updated'})
-
-# Example: Add to cart
 @app.route('/api/cart/add', methods=['POST'])
 @jwt_required()
 def add_to_cart():
@@ -136,152 +121,148 @@ def add_to_cart():
     data = request.get_json()
     product_id = data.get('product_id')
     quantity = data.get('quantity', 1)
-    db = get_db()
-    with db.cursor() as cursor:
-        cursor.execute("SELECT data FROM shopping_data WHERE user_email=%s", (email,))
-        user = cursor.fetchone()
-        if not user:
-            return jsonify({'error': 'User not found'}), 404
-        user_data = json.loads(user['data'])
-        cart = user_data.get('cart', [])
-        # Check if product already in cart
-        found = False
-        for item in cart:
-            if item['product_id'] == product_id:
-                item['quantity'] += quantity
-                found = True
-                break
-        if not found:
-            cart.append({'product_id': product_id, 'quantity': quantity})
-        user_data['cart'] = cart
-        cursor.execute("UPDATE shopping_data SET data=%s WHERE user_email=%s", (json.dumps(user_data), email))
-        db.commit()
+    if email not in user_carts:
+        user_carts[email] = []
+    cart = user_carts[email]
+    found = False
+    for item in cart:
+        if item['product_id'] == product_id:
+            item['quantity'] += quantity
+            found = True
+            break
+    if not found:
+        cart.append({'product_id': product_id, 'quantity': quantity})
+    user_carts[email] = cart
     return jsonify({'message': 'Item added to cart'})
 
 @app.route('/api/cart', methods=['GET'])
 @jwt_required()
 def get_cart():
     email = get_jwt_identity()
-    db = get_db()
-    with db.cursor() as cursor:
-        cursor.execute("SELECT data FROM shopping_data WHERE user_email=%s", (email,))
-        user = cursor.fetchone()
-        if not user:
-            return jsonify({'error': 'User not found'}), 404
-        user_data = json.loads(user['data'])
-        cart = user_data.get('cart', [])
-        # Enrich cart with product info
-        cart_items = []
-        total = 0
-        for item in cart:
-            product = next((p for p in PRODUCTS if p['id'] == item['product_id']), None)
-            if product:
-                item_total = product['price'] * item['quantity']
-                total += item_total
-                cart_items.append({
-                    'product': product,
-                    'quantity': item['quantity'],
-                    'total': item_total
-                })
-        return jsonify({'items': cart_items, 'total': total})
+    cart = user_carts.get(email, [])
+    cart_items = []
+    total = 0
+    for item in cart:
+        product = next((p for p in PRODUCTS if p['id'] == item['product_id']), None)
+        if product:
+            item_total = product['price'] * item['quantity']
+            total += item_total
+            cart_items.append({
+                'product': product,
+                'quantity': item['quantity'],
+                'total': item_total
+            })
+    return jsonify({'items': cart_items, 'total': total})
 
-# --- Purchase History Endpoints ---
+# --- Order Creation ---
 @app.route('/api/orders', methods=['POST'])
 @jwt_required()
 def create_order():
     email = get_jwt_identity()
-    data = request.get_json()
     db = get_db()
-    
     with db.cursor() as cursor:
-        # Get user's current cart
-        cursor.execute("SELECT data FROM shopping_data WHERE user_email=%s", (email,))
+        # Get user id
+        cursor.execute("SELECT id FROM users WHERE email=%s", (email,))
         user = cursor.fetchone()
         if not user:
             return jsonify({'error': 'User not found'}), 404
-        
-        user_data = json.loads(user['data'])
-        cart = user_data.get('cart', [])
-        
+        user_id = user['id']
+        cart = user_carts.get(email, [])
         if not cart:
             return jsonify({'error': 'Cart is empty'}), 400
-        
         # Calculate order total
-        order_items = []
         total = 0
         for item in cart:
             product = next((p for p in PRODUCTS if p['id'] == item['product_id']), None)
             if product:
-                item_total = product['price'] * item['quantity']
-                total += item_total
-                order_items.append({
-                    'product': product,
-                    'quantity': item['quantity'],
-                    'total': item_total
-                })
-        
-        # Create order with cleaner format
-        order = {
-            'id': datetime.datetime.now().strftime('%Y%m%d%H%M%S'),
-            'items': order_items,
-            'total': total
-        }
-        
-        # Add to user's order history
-        orders = user_data.get('orders', [])
-        orders.append(order)
-        user_data['orders'] = orders
-        
-        # Clear cart after successful order
-        user_data['cart'] = []
-        
-        # Update user data
-        cursor.execute("UPDATE shopping_data SET data=%s WHERE user_email=%s", (json.dumps(user_data), email))
+                total += product['price'] * item['quantity']
+        # Create order
+        cursor.execute("INSERT INTO orders (user_id, total) VALUES (%s, %s)", (user_id, total))
+        order_id = cursor.lastrowid
+        # Add order items
+        for item in cart:
+            product = next((p for p in PRODUCTS if p['id'] == item['product_id']), None)
+            if product:
+                cursor.execute(
+                    "INSERT INTO order_items (order_id, product_id, product_name, price, quantity) VALUES (%s, %s, %s, %s, %s)",
+                    (order_id, product['id'], product['name'], product['price'], item['quantity'])
+                )
         db.commit()
-        
-        return jsonify({'message': 'Order created successfully', 'order': order}), 201
+        # Clear cart
+        user_carts[email] = []
+        # Return order info
+        cursor.execute("SELECT * FROM orders WHERE id=%s", (order_id,))
+        order = cursor.fetchone()
+        cursor.execute("SELECT * FROM order_items WHERE order_id=%s", (order_id,))
+        items = cursor.fetchall()
+    return jsonify({'message': 'Order created successfully', 'order': order, 'items': items}), 201
 
+# --- Order History ---
 @app.route('/api/orders', methods=['GET'])
 @jwt_required()
 def get_orders():
     email = get_jwt_identity()
     db = get_db()
-    
     with db.cursor() as cursor:
-        cursor.execute("SELECT data FROM shopping_data WHERE user_email=%s", (email,))
+        cursor.execute("SELECT id FROM users WHERE email=%s", (email,))
         user = cursor.fetchone()
         if not user:
             return jsonify({'error': 'User not found'}), 404
-        
-        user_data = json.loads(user['data'])
-        orders = user_data.get('orders', [])
-        
-        # Sort orders by ID (newest first, since ID contains timestamp)
-        orders.sort(key=lambda x: x.get('id', ''), reverse=True)
-        
-        return jsonify({'orders': orders})
+        user_id = user['id']
+        # Fetch all order items for this user by joining orders and order_items
+        cursor.execute("""
+            SELECT o.id as order_id, o.total as order_total, o.created_at, 
+                   oi.product_id, oi.product_name, oi.price, oi.quantity
+            FROM orders o
+            JOIN order_items oi ON o.id = oi.order_id
+            WHERE o.user_id = %s
+            ORDER BY o.created_at DESC, oi.id ASC
+        """, (user_id,))
+        rows = cursor.fetchall()
+        # Group items by order_id
+        orders_dict = {}
+        for row in rows:
+            oid = row['order_id']
+            if oid not in orders_dict:
+                orders_dict[oid] = {
+                    'id': oid,
+                    'total': float(row['order_total']),
+                    'created_at': row['created_at'],
+                    'items': []
+                }
+            orders_dict[oid]['items'].append({
+                'product': {
+                    'id': row['product_id'],
+                    'name': row['product_name'],
+                    'price': float(row['price'])
+                },
+                'quantity': row['quantity'],
+                'total': float(row['price']) * row['quantity']
+            })
+        # Convert to list and sort by created_at descending
+        orders = list(orders_dict.values())
+        orders.sort(key=lambda x: x['created_at'], reverse=True)
+    return jsonify({'orders': orders})
 
+# --- Get Single Order ---
 @app.route('/api/orders/<order_id>', methods=['GET'])
 @jwt_required()
 def get_order(order_id):
     email = get_jwt_identity()
     db = get_db()
-    
     with db.cursor() as cursor:
-        cursor.execute("SELECT data FROM shopping_data WHERE user_email=%s", (email,))
+        cursor.execute("SELECT id FROM users WHERE email=%s", (email,))
         user = cursor.fetchone()
         if not user:
             return jsonify({'error': 'User not found'}), 404
-        
-        user_data = json.loads(user['data'])
-        orders = user_data.get('orders', [])
-        
-        # Find specific order
-        order = next((o for o in orders if o.get('id') == order_id), None)
+        user_id = user['id']
+        cursor.execute("SELECT * FROM orders WHERE id=%s AND user_id=%s", (order_id, user_id))
+        order = cursor.fetchone()
         if not order:
             return jsonify({'error': 'Order not found'}), 404
-        
-        return jsonify({'order': order})
+        cursor.execute("SELECT * FROM order_items WHERE order_id=%s", (order_id,))
+        items = cursor.fetchall()
+    return jsonify({'order': order, 'items': items})
 
-if __name__ == '__main__':
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000) 
+if __name__ == "__main__":
+    socketio.run(app, debug=True) 

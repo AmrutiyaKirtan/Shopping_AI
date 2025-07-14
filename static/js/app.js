@@ -19,17 +19,19 @@ function renderProductGrid() {
                 const card = document.createElement('div');
                 card.className = 'product-card';
                 card.innerHTML = `
-                    <div class="product-icon"><i class="fas fa-cube"></i></div>
                     <div class="product-name">${product.name}</div>
-                    <div class="product-price">$${product.price.toFixed(2)}</div>
                     <div class="product-category">${product.category}</div>
-                    <div class="view-details">View Details</div>
+                    <div class="product-price">$${product.price.toFixed(2)}</div>
+                    <button class="btn-glass add-to-cart-btn" data-id="${product.id}">Add to Cart</button>
                 `;
-                card.addEventListener('click', () => openProductModal(product));
                 grid.appendChild(card);
             });
+        })
+        .catch(error => {
+            console.error('Error fetching products:', error);
         });
 }
+
 
 function openProductModal(product) {
     const modal = document.getElementById('productModal');
@@ -166,6 +168,13 @@ function setupShoppingModals() {
     if (checkoutBtn) {
         checkoutBtn.onclick = function() {
             initiateCheckout();
+        };
+    }
+    // VR Tour quick action
+    const vrTourBtn = document.getElementById('vrTourBtn');
+    if (vrTourBtn) {
+        vrTourBtn.onclick = function() {
+            window.location.href = '/vr';
         };
     }
 }
@@ -823,6 +832,13 @@ function setupShoppingModals() {
             initiateCheckout();
         };
     }
+    // VR Tour quick action
+    const vrTourBtn = document.getElementById('vrTourBtn');
+    if (vrTourBtn) {
+        vrTourBtn.onclick = function() {
+            window.location.href = '/vr';
+        };
+    }
 }
 
 // AI Assistant
@@ -1165,3 +1181,7 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style); 
+
+document.addEventListener('DOMContentLoaded', () => {
+    renderProductGrid();
+});

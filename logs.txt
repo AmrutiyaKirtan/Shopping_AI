@@ -41,3 +41,11 @@
 - Added delay in checkout to ensure database updates complete before refreshing
 - Removed unused CSS for date display
 - Fixed order sorting to use ID instead of date field 
+
+## 2024-12-20 - VR Store Interactivity
+- Added interactive product boxes to the VR store scene using A-Frame
+- Implemented a visible cursor for gaze/click interaction in VR
+- Each product box is now clickable: clicking or gazing at a box shows a product info panel in VR
+- Added a product info panel that displays product name, description, and price, and auto-hides after 2.5 seconds
+- Used A-Frame's event-set for hover highlight and onclick for interactivity
+- Added supporting JavaScript function `showProductInfo` in vr.html 
